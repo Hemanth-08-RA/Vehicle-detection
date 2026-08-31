@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VehicleVision AI - Traffic Analytics Dashboard</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS v4 Play CDN -->
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+  <!-- Tailwind v4 Custom Theme Configuration -->
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: 'Inter', sans-serif;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+      
+      --color-brand-bg: #0A0F1C;
+      --color-brand-card: rgba(16, 22, 40, 0.65);
+      --color-brand-card-border: rgba(255, 255, 255, 0.07);
+      --color-brand-primary: #00F5FF;
+      --color-brand-secondary: #00BFFF;
+      --color-brand-success: #00FF88;
+      --color-brand-warning: #FFD700;
+      --color-brand-danger: #FF4D6D;
+      
+      --shadow-neon-cyan: 0 0 15px rgba(0, 245, 255, 0.3);
+      --shadow-neon-green: 0 0 15px rgba(0, 255, 136, 0.3);
+      --shadow-neon-red: 0 0 15px rgba(255, 77, 109, 0.3);
+    }
+  </style>
+
+  <!-- Global Custom CSS (Scrollbars, Glows, and Animations) -->
+  <style>
+    body {
+      background-color: #0A0F1C;
+      color: #E2E8F0;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0F1C;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00F5FF;
+    }
+
+    /* Grid Overlay background */
+    .bg-grid-pattern {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+    }
+
+    /* Glassmorphism utility */
+    .glass-panel {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Bounding box animation effect */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    
+    .live-dot {
+      animation: pulse-glow 1.5s infinite;
+    }
+  </style>
+
+  <!-- ESM Import Maps -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19?dev",
+        "react-dom/client": "https://esm.sh/react-dom@19/client?dev",
+        "htm": "https://esm.sh/htm@3"
+      }
+    }
+  </script>
+</head>
+<body class="bg-brand-bg bg-grid-pattern min-h-screen antialiased">
+  <!-- Mount root for React -->
+  <div id="root"></div>
+
+  <!-- React Entry Module -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

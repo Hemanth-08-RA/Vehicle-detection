@@ -1,0 +1,21 @@
+# Virtual Environments
+.venv/
+.venv-1/
+
+# Python Caches
+__pycache__/
+*.pyc
+
+# Local Data and Logs
+detections/
+
+# Model Weights
+*.pt
+
+# YOLOv5 Cloned Repository (Ultralytics)
+yolov5/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
