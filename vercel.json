@@ -2,6 +2,7 @@
   "version": 2,
   "name": "vehicle-vision-ai",
   "cleanUrls": true,
+  "outputDirectory": "static",
   "headers": [
     {
       "source": "/(.*)",
@@ -33,10 +34,6 @@
     {
       "source": "/api/stop_feeds",
       "destination": "https://vehicle-detection-backend.onrender.com/api/stop_feeds"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/static/$1"
     }
   ]
 }

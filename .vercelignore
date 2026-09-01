@@ -1,0 +1,8 @@
+# Ignore heavy Python backend files during Vercel Frontend build
+requirements.txt
+main.py
+.venv
+.venv-1
+detections
+yolov5
+*.pt
