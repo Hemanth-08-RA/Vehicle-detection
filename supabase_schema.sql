@@ -14,15 +14,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable RLS for Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own profile" 
+-- Drop existing policies if re-running
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+
+CREATE POLICY "Users can view own profile" 
 ON public.profiles FOR SELECT 
 USING (auth.uid() = id);
 
-CREATE POLICY "Users can update their own profile" 
+CREATE POLICY "Users can update own profile" 
 ON public.profiles FOR UPDATE 
 USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert their own profile" 
+CREATE POLICY "Users can insert own profile" 
 ON public.profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
@@ -48,6 +54,12 @@ CREATE INDEX IF NOT EXISTS idx_detection_logs_timestamp ON public.detection_logs
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.detection_logs ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if re-running
+DROP POLICY IF EXISTS "Users can view own detection logs" ON public.detection_logs;
+DROP POLICY IF EXISTS "Users can insert own detection logs" ON public.detection_logs;
+DROP POLICY IF EXISTS "Users can delete own detection logs" ON public.detection_logs;
+DROP POLICY IF EXISTS "Users can update own detection logs" ON public.detection_logs;
 
 -- RLS Policy: Users can view ONLY their own detection logs
 CREATE POLICY "Users can view own detection logs" 
