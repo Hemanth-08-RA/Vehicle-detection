@@ -1,151 +1,105 @@
 # VehicleVision AI - Real-Time Vehicle Detection & Traffic Analytics
 
-VehicleVision AI is a premium, futuristic traffic analytics dashboard powered by **YOLOv5** deep learning and computer vision. The project features a lightweight **FastAPI** Python backend coupled with a **build-less React & Tailwind CSS v4** frontend.
+VehicleVision AI is a premium, futuristic traffic analytics dashboard powered by **YOLOv5** deep learning, **Vercel** serverless web hosting, and **Supabase** (PostgreSQL + Auth + Row Level Security).
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features & Architecture
 
+* **High-Performance Architecture**:
+  * **Frontend**: Deployed globally on **Vercel** (React 19 + Tailwind CSS v4 Play CDN).
+  * **Authentication & Database**: Powered by **Supabase** (PostgreSQL + JWT Sessions + Row Level Security).
+  * **AI Inference Engine**: **FastAPI** Python service executing YOLOv5 real-time vehicle classification & video tracking.
+* **Supabase User Authentication**: Registration and Login with encrypted passwords (never stored in plain text).
+* **Row Level Security (RLS)**: Each user's detection history logs are strictly isolated in PostgreSQL so users cannot view or modify other users' data.
 * **Real-Time Vehicle Detection**: Processes vehicle class predictions (Cars, Motorcycles, Trucks, Buses) using YOLOv5.
-* **Live Monitoring Stream**: Interactive video feed viewer with play/pause controls, dynamic FPS counters, and full-screen visualization from built-in webcams or remote IP Camera streams.
-* **Traffic Density Calculator**: Adaptive density status indicator (Low, Medium, High) based on live vehicle thresholds.
-* **Interactive Snapshots Gallery**: Scrollable gallery displaying crop captures of vehicle detections with inspection modal popups.
-* **Futuristic Analytics**: Custom SVG-designed widgets showing traffic distribution donuts, volume bar graphs, and hourly traffic flow lines.
-* **History Logs**: Clean database table with search options and a custom utility to **Export to CSV**.
-* **Cloud Integration**: Synchronizes local logs to a Google Sheets cloud webhook in background tasks.
+* **Live Stream Studio**: Video stream viewer with play/pause controls, dynamic FPS counter, and stream presets.
+* **Traffic Density Calculator**: Adaptive density status indicator (LOW, MEDIUM, HIGH) with congestion advisory metrics.
+* **Interactive Snapshots & SVG Analytics**: Scrollable snapshot gallery with 1-click Lightbox modal inspect, distribution donuts, hourly trend line graphs, and volume bar charts.
+* **CSV Export & Log Storage**: Clean, searchable detection database table with **Export to CSV**.
 
 ---
 
 ## 🛠️ Technology Stack
 
-* **Backend**: FastAPI (Python), PyTorch, OpenCV, Uvicorn, Pandas
-* **Frontend**: React (ES Modules), Tailwind CSS v4 (Play CDN), custom SVG charts
-* **Machine Learning**: YOLOv5 Nano Model (Ultralytics)
+* **Frontend**: Vercel, React 19 (ES Modules), Tailwind CSS v4, FontAwesome, SVG Charts
+* **Database & Auth**: Supabase (PostgreSQL, Auth, RLS Policies)
+* **AI Engine**: FastAPI (Python), PyTorch, OpenCV Headless, YOLOv5 (Ultralytics)
 
 ---
 
-## 🚀 Step-by-Step Installation & Setup
+## ⚡ Supabase Setup Instructions
 
-Follow these instructions to set up the project on your local machine:
-
-### 📋 Prerequisites
-* **Python 3.9 - 3.11** (Ensure you check **"Add Python to PATH"** during installation on Windows)
-* **Git** installed on your system
+1. Log in to [Supabase Console](https://supabase.com/dashboard) and create a new project.
+2. Go to **SQL Editor** in the left sidebar.
+3. Open [`supabase_schema.sql`](supabase_schema.sql) from this repository, paste the entire SQL script, and click **Run**.
+   - This creates the `detection_logs` table, `profiles` table, indexes, user creation trigger, and **Row Level Security (RLS)** policies.
+4. Go to **Project Settings -> API** to retrieve your:
+   - **`SUPABASE_URL`** (e.g., `https://xyz.supabase.co`)
+   - **`SUPABASE_ANON_KEY`** (Public safe API key)
 
 ---
 
-### Step 1: Clone the Repository
-Open your terminal (or PowerShell on Windows) and run:
+## 🚀 Vercel Deployment Instructions
+
+1. Push this repository to GitHub.
+2. Log in to [Vercel Dashboard](https://vercel.com/dashboard) and click **Add New... -> Project**.
+3. Import your GitHub repository (`Vehicle-detection`).
+4. Under **Environment Variables**, add:
+   - `SUPABASE_URL`: Your Supabase Project URL
+   - `SUPABASE_ANON_KEY`: Your Supabase Anon Key
+   - `DETECTION_BACKEND_URL`: Your FastAPI detection service URL (e.g., `https://vehicle-detection-backend.onrender.com`)
+5. Click **Deploy**. Vercel will automatically read `vercel.json` and deploy your application.
+
+---
+
+## 💻 Local Testing & Setup
+
+### Step 1: Clone & Configure Environment
 ```bash
 git clone https://github.com/Hemanth-08-RA/Vehicle-detection.git
 cd Vehicle-detection
+cp .env.example .env
 ```
 
-### Step 2: Create a Virtual Environment
-It is highly recommended to use a virtual environment to keep dependencies isolated:
-
-* **On Windows (PowerShell)**:
-  ```powershell
-  python -m venv .venv
-  .venv\Scripts\Activate.ps1
-  ```
-  *(If you get a PowerShell Execution Policy error, run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process` first)*
-
-* **On macOS / Linux**:
-  ```bash
-  python3 -m venv .venv
-  source .venv/bin/activate
-  ```
-
-### Step 3: Install Dependencies
-Upgrade `pip` and install the required packages:
+### Step 2: Set Up Virtual Environment & Dependencies
 ```bash
-python -m pip install --upgrade pip
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
-*Note: This will download PyTorch and OpenCV. The installation might take a few minutes depending on your internet connection.*
 
-### Step 4: Run the Application
-Start the FastAPI server:
+### Step 3: Run Local Detection Engine
 ```bash
 python main.py
 ```
-Upon startup, the server will optimize your CPU threads and load the YOLOv5 engine.
-
-### Step 5: Access the Dashboard
-Once the console outputs `Uvicorn running on http://0.0.0.0:8000`, open your web browser and navigate to:
-
-👉 **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
-
----
-
-## 🧪 Testing with Sample Assets
-
-We have provided sample media to test the vehicle detection:
-* **Images**: Located in the [`image/`](image/) directory. Drag and drop any image (e.g., `Bus2.jpeg` or `car.jpeg`) into the upload zone to test detection.
-* **Videos**: Located in the [`video/`](video/) directory. You can test live stream tracking by inputting the path to a video file in the camera settings.
-
----
-
-## ☁️ Deploying to Render (Cloud Web Application)
-
-This application is fully configured for seamless 1-click deployment on **[Render](https://render.com/)** straight from GitHub.
-
-### Option A: Automatic Blueprint Deployment (Recommended)
-1. Push this repository to GitHub.
-2. Sign in to your [Render Dashboard](https://dashboard.render.com/).
-3. Click **New +** -> **Blueprint**.
-4. Connect your GitHub repository (`Vehicle-detection`).
-5. Render will automatically detect `render.yaml` and configure all build/start settings, environment variables, and instance specs.
-6. Click **Apply**.
-
----
-
-### Option B: Manual Web Service Setup
-If creating a Web Service manually on Render:
-
-| Field | Value |
-| :--- | :--- |
-| **Service Type** | Web Service |
-| **Environment** | Python 3 |
-| **Region** | Oregon, USA (or any region) |
-| **Branch** | `main` |
-| **Build Command** | `pip install --upgrade pip && pip install -r requirements.txt` |
-| **Start Command** | `gunicorn -w 1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT main:app` |
-| **Auto-Deploy** | Yes |
-
-#### Environment Variables
-In the Render Dashboard under **Environment**:
-
-| Variable | Recommended Value | Description |
-| :--- | :--- | :--- |
-| `PORT` | `10000` | Port assigned dynamically by Render |
-| `ALLOWED_ORIGINS` | `*` | Allowed CORS origins |
-| `PYTHON_VERSION` | `3.10.12` | Python version for Render runtime |
-| `WEBHOOK_URL` | `https://script.google.com/...` | Google Sheets logging webhook URL |
+The FastAPI backend will start on **`http://localhost:8000`**.
 
 ---
 
 ## 📂 Project Architecture
 
 ```
-├── main.py              # FastAPI server (API routes & stream generator)
-├── requirements.txt     # Python dependency list (with Gunicorn & Headless OpenCV)
-├── Procfile             # Render production server start process
-├── render.yaml          # Render Blueprint deployment definition
+├── main.py              # FastAPI backend engine (YOLOv5 & video streams)
+├── requirements.txt     # Python dependency list
+├── vercel.json          # Vercel deployment configuration & API rewrites
+├── supabase_schema.sql  # Supabase PostgreSQL schema & RLS policies
+├── .env.example         # Environment variables template
+├── Procfile             # Render/PaaS backend execution process
+├── render.yaml          # Render backend blueprint
 ├── runtime.txt          # Python runtime version
-├── .gitignore           # Excludes virtual environments and local weights
+├── .gitignore           # Excludes local caches and weights
 ├── LICENSE              # Open-source MIT License
 ├── README.md            # Detailed documentation
-├── image/               # Test image files (Bus & Car samples)
-├── video/               # Test video files (Traffic flows)
+├── image/               # Sample test images
+├── video/               # Sample test traffic streams
 └── static/              # Frontend Directory
-    ├── index.html       # Entrypoint (Tailwind CSS v4 and React maps)
-    └── app.js           # React components, charts, and AJAX logic
+    ├── index.html       # HTML entrypoint (Tailwind CSS v4 & Supabase SDK)
+    └── app.js           # React app, Supabase Auth/DB, charts, UI
 ```
 
 ---
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

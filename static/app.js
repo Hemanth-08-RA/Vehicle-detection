@@ -4,14 +4,26 @@ import htm from 'htm';
 
 const html = htm.bind(React.createElement);
 
-const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzj7Y3Cg858enguXSXuq1k7CtDGRxkOl9Q6wmachbQGN9GWDkBRYCGNDyAD-ReHnVu2/exec";
+// Dynamic Supabase Client Initialization
+const initSupabase = () => {
+  const url = window.ENV?.SUPABASE_URL || localStorage.getItem("SUPABASE_URL") || "";
+  const key = window.ENV?.SUPABASE_ANON_KEY || localStorage.getItem("SUPABASE_ANON_KEY") || "";
+  if (url && key && window.supabase && window.supabase.createClient) {
+    try {
+      return window.supabase.createClient(url, key);
+    } catch (e) {
+      console.warn("Supabase init warning:", e);
+    }
+  }
+  return null;
+};
 
 // ==========================================
 // SUB-COMPONENTS
 // ==========================================
 
 // Navigation Bar Component
-const Navbar = ({ activeTab, setActiveTab, logCount }) => {
+const Navbar = ({ activeTab, setActiveTab, logCount, user, onOpenAuth, onLogout }) => {
   const [timeStr, setTimeStr] = useState('');
 
   useEffect(() => {
@@ -49,7 +61,7 @@ const Navbar = ({ activeTab, setActiveTab, logCount }) => {
             <span class="font-display text-xl font-black tracking-wider text-white">
               VehicleVision <span class="bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent bg-clip-text text-transparent">AI</span>
             </span>
-            <span class="text-3xs font-mono text-slate-400 tracking-widest uppercase -mt-1">YOLOv5 Neural Engine</span>
+            <span class="text-3xs font-mono text-slate-400 tracking-widest uppercase -mt-1">Vercel + Supabase Cloud</span>
           </div>
         </div>
 
@@ -76,15 +88,32 @@ const Navbar = ({ activeTab, setActiveTab, logCount }) => {
           `)}
         </nav>
 
-        <!-- System Status Telemetry -->
-        <div class="flex items-center gap-4">
-          <div class="hidden sm:flex flex-col text-right">
-            <div class="flex items-center justify-end gap-1.5">
-              <span class="h-2 w-2 rounded-full bg-brand-success live-pulse"></span>
-              <span class="text-3xs font-mono font-bold text-brand-success tracking-wider uppercase">NODE ONLINE</span>
+        <!-- User Authentication Status Telemetry -->
+        <div class="flex items-center gap-3">
+          ${user ? html`
+            <div class="flex items-center gap-3 bg-slate-900/90 border border-brand-card-border rounded-xl px-3 py-1.5">
+              <div class="flex flex-col text-right hidden sm:flex">
+                <span class="text-3xs font-mono font-bold text-brand-success uppercase flex items-center gap-1 justify-end">
+                  <span class="h-2 w-2 rounded-full bg-brand-success live-pulse"></span> AUTHENTICATED
+                </span>
+                <span class="text-3xs font-mono text-slate-300 truncate max-w-[120px]">${user.email}</span>
+              </div>
+              <button 
+                onClick=${onLogout}
+                class="rounded-lg bg-brand-danger/10 border border-brand-danger/30 hover:bg-brand-danger/25 text-brand-danger px-2.5 py-1 text-3xs font-mono font-bold transition-all"
+                title="Sign Out"
+              >
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Sign Out
+              </button>
             </div>
-            <span class="text-3xs font-mono text-slate-400">${timeStr || 'LIVE'}</span>
-          </div>
+          ` : html`
+            <button 
+              onClick=${onOpenAuth}
+              class="btn-shimmer rounded-xl bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-extrabold text-xs px-4 py-2 shadow-neon-cyan transition-all flex items-center gap-2"
+            >
+              <i class="fa-solid fa-lock text-xs"></i> Sign In / Register
+            </button>
+          `}
 
           <button 
             onClick=${() => setActiveTab('settings')}
@@ -101,10 +130,9 @@ const Navbar = ({ activeTab, setActiveTab, logCount }) => {
 };
 
 // Stat KPI Card
-const StatCard = ({ title, count, icon, colorClass, shadowClass, gradientFrom, gradientTo, percentChange }) => {
+const StatCard = ({ title, count, icon, colorClass, shadowClass, gradientFrom, gradientTo }) => {
   return html`
     <div class="glass-panel glass-panel-hover relative overflow-hidden rounded-2xl p-6 transition-all">
-      <!-- Background Ambient Glow -->
       <div class="absolute -right-8 -bottom-8 h-32 w-32 rounded-full filter blur-2xl opacity-15 bg-gradient-to-br ${gradientFrom} ${gradientTo}"></div>
       
       <div class="flex items-center justify-between relative z-10">
@@ -115,7 +143,7 @@ const StatCard = ({ title, count, icon, colorClass, shadowClass, gradientFrom, g
           </h3>
           <div class="mt-2 flex items-center gap-1.5">
             <span class="inline-flex items-center text-3xs font-mono font-semibold text-brand-success bg-brand-success/10 px-2 py-0.5 rounded-full border border-brand-success/20">
-              <i class="fa-solid fa-arrow-trend-up text-4xs mr-1"></i> Active Tracked
+              <i class="fa-solid fa-shield-check text-4xs mr-1"></i> RLS Secured
             </span>
           </div>
         </div>
@@ -166,7 +194,6 @@ const TrafficDensityCard = ({ totalCount }) => {
         </span>
       </div>
 
-      <!-- Meter Gauge Progress Bar -->
       <div class="space-y-2 my-4">
         <div class="flex justify-between text-xs font-mono">
           <span class="text-slate-400">Current Occupancy</span>
@@ -188,7 +215,7 @@ const TrafficDensityCard = ({ totalCount }) => {
   `;
 };
 
-// SVG Donut Classification Chart Component
+// SVG Donut Classification Chart
 const SVGDonutChart = ({ data }) => {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
   const safeData = total === 0 ? { car: 1, motorcycle: 1, truck: 1, bus: 1 } : data;
@@ -207,7 +234,6 @@ const SVGDonutChart = ({ data }) => {
 
   return html`
     <div class="flex flex-col sm:flex-row items-center justify-around gap-6 py-2">
-      <!-- Donut Graphic -->
       <div class="relative h-44 w-44 flex items-center justify-center">
         <svg class="h-full w-full -rotate-90 transform" viewBox="0 0 140 140">
           <circle cx="70" cy="70" r="${radius}" stroke="rgba(255,255,255,0.05)" stroke-width="16" fill="transparent" />
@@ -240,7 +266,6 @@ const SVGDonutChart = ({ data }) => {
         </div>
       </div>
 
-      <!-- Legend Tags -->
       <div class="grid grid-cols-2 sm:grid-cols-1 gap-3 w-full sm:w-auto">
         ${classes.map(cls => {
           const pct = total > 0 ? ((cls.count / total) * 100).toFixed(1) : 0;
@@ -329,18 +354,13 @@ const SVGLineChart = ({ logs }) => {
           </linearGradient>
         </defs>
 
-        <!-- Grid Lines -->
         <line x1="${padding}" y1="${padding}" x2="${width - padding}" y2="${padding}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="4" />
         <line x1="${padding}" y1="${padding + chartHeight / 2}" x2="${width - padding}" y2="${padding + chartHeight / 2}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="4" />
         <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="rgba(255,255,255,0.08)" />
 
-        <!-- Gradient Fill -->
         <path d="${fillPathD}" fill="url(#lineGrad)" />
-
-        <!-- Smooth Path Line -->
         <path d="${pathD}" fill="none" stroke="url(#strokeGrad)" stroke-width="3" stroke-linecap="round" />
 
-        <!-- Data Circles & Labels -->
         ${points.map((p, idx) => html`
           <g key=${idx}>
             <circle cx="${p.x}" cy="${p.y}" r="4" fill="#070B14" stroke="#00F5FF" stroke-width="2" class="hover:r-6 transition-all cursor-pointer" />
@@ -353,7 +373,7 @@ const SVGLineChart = ({ logs }) => {
   `;
 };
 
-// SVG Bar Chart Component for Class Comparison
+// SVG Bar Chart Component
 const SVGBarChart = ({ data }) => {
   const categories = ['Cars', 'Motorcycles', 'Trucks', 'Buses'];
   const values = [data.car || 0, data.motorcycle || 0, data.truck || 0, data.bus || 0];
@@ -373,7 +393,6 @@ const SVGBarChart = ({ data }) => {
   return html`
     <div class="w-full overflow-x-auto">
       <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto max-h-[180px]">
-        <!-- Baseline -->
         <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="rgba(255,255,255,0.08)" />
 
         ${categories.map((cat, idx) => {
@@ -384,10 +403,7 @@ const SVGBarChart = ({ data }) => {
 
           return html`
             <g key=${cat}>
-              <!-- Background Bar track -->
               <rect x="${x}" y="${padding}" width="${barWidth}" height="${chartHeight}" rx="6" fill="rgba(255,255,255,0.03)" />
-              
-              <!-- Value Bar -->
               <rect 
                 x="${x}" 
                 y="${y}" 
@@ -398,11 +414,7 @@ const SVGBarChart = ({ data }) => {
                 opacity="0.85"
                 class="transition-all duration-500 hover:opacity-100 cursor-pointer"
               />
-              
-              <!-- Value label -->
               <text x="${x + barWidth / 2}" y="${y - 8}" text-anchor="middle" fill="${colors[idx]}" font-size="11" font-family="Share Tech Mono" font-weight="bold">${val}</text>
-              
-              <!-- Category label -->
               <text x="${x + barWidth / 2}" y="${height - 8}" text-anchor="middle" fill="#94A3B8" font-size="10" font-family="Share Tech Mono">${cat}</text>
             </g>
           `;
@@ -412,11 +424,159 @@ const SVGBarChart = ({ data }) => {
   `;
 };
 
+// Supabase Auth Modal (Login / Register)
+const AuthModal = ({ isOpen, onClose, supabaseClient, triggerAlert, onAuthSuccess }) => {
+  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      triggerAlert("Please fill in both email and password fields.");
+      return;
+    }
+
+    if (!supabaseClient) {
+      triggerAlert("Supabase client is not configured. Please enter your Supabase URL & Key in Settings first.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
+        triggerAlert("Logged in successfully!", "success");
+        onAuthSuccess(data.user);
+        onClose();
+      } else {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName || email.split('@')[0] }
+          }
+        });
+        if (error) throw error;
+        triggerAlert("Registration successful! Check your email for verification link.", "success");
+        if (data.user) {
+          onAuthSuccess(data.user);
+        }
+        onClose();
+      }
+    } catch (err) {
+      triggerAlert(err.message || "Authentication failed. Check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return html`
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn">
+      <div class="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl border border-brand-card-border">
+        <button 
+          onClick=${onClose}
+          class="absolute top-4 right-4 text-slate-400 hover:text-white transition-all text-lg"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="mb-6 text-center">
+          <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary/10 border border-brand-primary/30 text-brand-primary text-2xl mb-3 shadow-neon-cyan">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h3 class="font-display font-black text-white text-2xl">
+            ${mode === 'login' ? 'Welcome Back' : 'Create Account'}
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">
+            ${mode === 'login' ? 'Sign in to access your Row-Level Secured detection history' : 'Register for Supabase Auth to store your private traffic metrics'}
+          </p>
+        </div>
+
+        <form onSubmit=${handleSubmit} class="space-y-4 font-sans">
+          ${mode === 'register' && html`
+            <div>
+              <label class="block text-3xs font-mono text-slate-400 uppercase mb-1">Full Name</label>
+              <input 
+                type="text" 
+                value=${fullName} 
+                onChange=${(e) => setFullName(e.target.value)}
+                placeholder="John Doe"
+                class="w-full rounded-xl border border-brand-card-border bg-slate-950 px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:border-brand-primary focus:outline-none"
+              />
+            </div>
+          `}
+
+          <div>
+            <label class="block text-3xs font-mono text-slate-400 uppercase mb-1">Email Address</label>
+            <input 
+              type="email" 
+              required
+              value=${email} 
+              onChange=${(e) => setEmail(e.target.value)}
+              placeholder="user@example.com"
+              class="w-full rounded-xl border border-brand-card-border bg-slate-950 px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:border-brand-primary focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-3xs font-mono text-slate-400 uppercase mb-1">Password</label>
+            <input 
+              type="password" 
+              required
+              value=${password} 
+              onChange=${(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              class="w-full rounded-xl border border-brand-card-border bg-slate-950 px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:border-brand-primary focus:outline-none"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            disabled=${loading}
+            class="btn-shimmer w-full rounded-xl bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-extrabold text-xs py-3 shadow-neon-cyan transition-all flex items-center justify-center gap-2 mt-6"
+          >
+            ${loading ? html`<i class="fa-solid fa-spinner animate-spin"></i> Authenticating...` : (mode === 'login' ? 'Sign In' : 'Create Account')}
+          </button>
+        </form>
+
+        <div class="mt-6 text-center border-t border-brand-card-border pt-4 text-xs text-slate-400">
+          ${mode === 'login' ? html`
+            Don't have an account? 
+            <button onClick=${() => setMode('register')} class="text-brand-primary font-bold hover:underline ml-1">
+              Sign Up Free
+            </button>
+          ` : html`
+            Already registered? 
+            <button onClick=${() => setMode('login')} class="text-brand-primary font-bold hover:underline ml-1">
+              Sign In
+            </button>
+          `}
+        </div>
+
+      </div>
+    </div>
+  `;
+};
+
 // MAIN APPLICATION COMPONENT
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [logs, setLogs] = useState([]);
   
+  // Supabase Auth & Client State
+  const [supabaseClient, setSupabaseClient] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   // Settings & Stream config
   const [cameraUrl, setCameraUrl] = useState('0');
   const [confidence, setConfidence] = useState(0.25);
@@ -449,7 +609,57 @@ const App = () => {
     setTimeout(() => setAlert(null), 5000);
   };
 
+  // Initialize Supabase on load
+  useEffect(() => {
+    const client = initSupabase();
+    if (client) {
+      setSupabaseClient(client);
+      client.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          setUser(session.user);
+        }
+      });
+
+      const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user || null);
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, []);
+
+  // Fetch log history (using Supabase RLS if authenticated, or local API fallback)
   const fetchLogs = async () => {
+    if (supabaseClient && user) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('detection_logs')
+          .select('*')
+          .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+        setLogs(data || []);
+
+        if (data && data.length > 0) {
+          const sums = data.reduce((acc, log) => {
+            acc.car += log.cars || 0;
+            acc.motorcycle += log.motorcycles || 0;
+            acc.truck += log.trucks || 0;
+            acc.bus += log.buses || 0;
+            acc.total += log.total || 0;
+            return acc;
+          }, { car: 0, motorcycle: 0, truck: 0, bus: 0, total: 0 });
+          setCumulativeStats(sums);
+        } else {
+          setCumulativeStats({ car: 0, motorcycle: 0, truck: 0, bus: 0, total: 0 });
+        }
+        return;
+      } catch (err) {
+        console.warn("Supabase fetch error, checking API fallback:", err);
+      }
+    }
+
+    // Local API fallback
     try {
       const res = await fetch('/api/logs');
       if (res.ok) {
@@ -466,8 +676,6 @@ const App = () => {
             return acc;
           }, { car: 0, motorcycle: 0, truck: 0, bus: 0, total: 0 });
           setCumulativeStats(sums);
-        } else {
-          setCumulativeStats({ car: 0, motorcycle: 0, truck: 0, bus: 0, total: 0 });
         }
       }
     } catch (e) {
@@ -477,7 +685,7 @@ const App = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [user, supabaseClient]);
 
   useEffect(() => {
     let interval;
@@ -488,9 +696,18 @@ const App = () => {
       }, 3000);
     }
     return () => clearInterval(interval);
-  }, [isStreaming]);
+  }, [isStreaming, user, supabaseClient]);
 
-  // Handle Drag & Drop
+  const handleLogout = async () => {
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+      setUser(null);
+      setLogs([]);
+      setCumulativeStats({ car: 0, motorcycle: 0, truck: 0, bus: 0, total: 0 });
+      triggerAlert("Signed out successfully.", "success");
+    }
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
   };
@@ -515,7 +732,6 @@ const App = () => {
     setUploadStats(null);
   };
 
-  // 1-Click Sample Image Selector
   const loadSampleImage = async (samplePath) => {
     try {
       setIsUploading(true);
@@ -554,6 +770,25 @@ const App = () => {
       if (res.ok && data.success) {
         setUploadResultImage(data.image);
         setUploadStats(data.counts);
+
+        // Save detection log into Supabase if user is logged in
+        if (supabaseClient && user) {
+          try {
+            await supabaseClient.from('detection_logs').insert([{
+              user_id: user.id,
+              source: 'Upload',
+              cars: data.counts.car || 0,
+              motorcycles: data.counts.motorcycle || 0,
+              trucks: data.counts.truck || 0,
+              buses: data.counts.bus || 0,
+              total: data.counts.total || 0,
+              image_url: data.filename || 'detections/upload.jpg'
+            }]);
+          } catch (dbErr) {
+            console.error("Supabase insert error:", dbErr);
+          }
+        }
+
         triggerAlert(`AI Detection complete! Found ${data.counts.total} vehicles.`, "success");
         fetchLogs();
       } else {
@@ -582,14 +817,31 @@ const App = () => {
   };
 
   const handleClearLogs = async () => {
-    if (!confirm("Are you sure you want to clear all detection history logs and saved image snapshots?")) {
+    if (!confirm("Are you sure you want to clear your detection history logs?")) {
       return;
     }
+
+    if (supabaseClient && user) {
+      try {
+        const { error } = await supabaseClient
+          .from('detection_logs')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        fetchLogs();
+        triggerAlert("Your Supabase detection logs cleared successfully.", "success");
+        return;
+      } catch (err) {
+        triggerAlert("Failed to clear Supabase logs.");
+      }
+    }
+
     try {
       const res = await fetch("/api/clear_logs", { method: "POST" });
       if (res.ok) {
         fetchLogs();
-        triggerAlert("All history logs and images cleared.", "success");
+        triggerAlert("All history logs cleared.", "success");
       }
     } catch (e) {
       triggerAlert("Failed to clear logs.");
@@ -647,7 +899,7 @@ const App = () => {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  const galleryDetections = logs.filter(log => log.image && log.total > 0).slice(0, 6);
+  const galleryDetections = logs.filter(log => (log.image || log.image_url) && log.total > 0).slice(0, 6);
 
   const filteredLogs = logs.filter(log => {
     if (!searchQuery) return true;
@@ -663,7 +915,14 @@ const App = () => {
     <div class="min-h-screen flex flex-col font-sans">
       
       <!-- Top Navigation Header -->
-      <${Navbar} activeTab=${activeTab} setActiveTab=${setActiveTab} logCount=${logs.length} />
+      <${Navbar} 
+        activeTab=${activeTab} 
+        setActiveTab=${setActiveTab} 
+        logCount=${logs.length}
+        user=${user}
+        onOpenAuth=${() => setIsAuthModalOpen(true)}
+        onLogout=${handleLogout}
+      />
       
       <!-- Alert Toast Banner -->
       ${alert && html`
@@ -677,6 +936,15 @@ const App = () => {
         </div>
       `}
 
+      <!-- Auth Modal -->
+      <${AuthModal}
+        isOpen=${isAuthModalOpen}
+        onClose=${() => setIsAuthModalOpen(false)}
+        supabaseClient=${supabaseClient}
+        triggerAlert=${triggerAlert}
+        onAuthSuccess=${(u) => setUser(u)}
+      />
+
       <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Hero Header Section -->
@@ -684,7 +952,7 @@ const App = () => {
           <div>
             <div class="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 bg-brand-primary/10 px-3.5 py-1 text-3xs font-mono font-bold tracking-wider uppercase text-brand-primary mb-3">
               <span class="h-2 w-2 rounded-full bg-brand-primary inline-block live-pulse"></span>
-              YOLOv5 Neural Object Recognition
+              Supabase Auth & RLS PostgreSQL Enabled
             </div>
             <h1 class="font-display text-4xl sm:text-5xl font-black tracking-tight text-white">
               Real-Time Vehicle Vision <br />
@@ -699,6 +967,14 @@ const App = () => {
 
           <!-- Quick Action Buttons -->
           <div class="flex items-center gap-3">
+            ${!user && html`
+              <button 
+                onClick=${() => setIsAuthModalOpen(true)}
+                class="rounded-xl bg-slate-900 border border-brand-primary/40 text-brand-primary hover:bg-brand-primary/10 font-bold text-xs px-4 py-3 transition-all flex items-center gap-2"
+              >
+                <i class="fa-solid fa-user-plus"></i> Sign In / Register
+              </button>
+            `}
             <button 
               onClick=${() => setActiveTab('live')}
               class="btn-shimmer rounded-xl bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-extrabold text-xs px-5 py-3 shadow-neon-cyan transition-all hover:scale-105 flex items-center gap-2"
@@ -769,7 +1045,7 @@ const App = () => {
                   <div class="flex items-center gap-3">
                     ${isStreaming && html`
                       <span class="rounded-full bg-slate-900 border border-brand-card-border px-3 py-1 text-3xs font-mono text-brand-primary">
-                        FPS: ${fps} | YOLOv5n Active
+                        FPS: ${fps} | YOLOv5 Active
                       </span>
                     `}
                     <button onClick=${toggleFullscreen} class="h-8 w-8 rounded-lg border border-brand-card-border bg-white/5 text-slate-400 hover:text-white hover:border-brand-primary transition-all flex items-center justify-center" title="Fullscreen View">
@@ -786,7 +1062,6 @@ const App = () => {
                         alt="Live Camera Stream" 
                       />`
                     : html`
-                      <!-- Standby Screen -->
                       <div class="flex flex-col items-center justify-center p-8 text-center space-y-4">
                         <div class="relative flex items-center justify-center h-20 w-20 rounded-2xl border border-dashed border-brand-primary/40 text-brand-primary bg-brand-primary/5">
                           <i class="fa-solid fa-video-slash text-3xl"></i>
@@ -801,7 +1076,6 @@ const App = () => {
                 </div>
 
                 <div class="border-t border-brand-card-border px-6 py-4 flex flex-wrap gap-4 items-center justify-between bg-slate-950/60">
-                  <!-- Stream Presets -->
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-3xs font-mono text-slate-400 uppercase">Presets:</span>
                     <button onClick=${() => setCameraUrl('0')} class="rounded-lg bg-slate-900 border border-brand-card-border px-2.5 py-1 text-3xs font-mono text-slate-300 hover:border-brand-primary hover:text-white transition-all">Webcam 0</button>
@@ -830,13 +1104,11 @@ const App = () => {
               <div class="flex flex-col gap-6">
                 <${TrafficDensityCard} totalCount=${isStreaming ? (logs[0]?.total || 0) : 0} />
                 
-                <!-- Quick Settings Card -->
                 <div class="glass-panel glass-panel-hover rounded-2xl p-6 flex-grow flex flex-col justify-between">
                   <div>
                     <h3 class="font-display font-bold text-white mb-4 text-base">Quick Controls</h3>
                     
                     <div class="space-y-5">
-                      <!-- Confidence threshold slider -->
                       <div>
                         <div class="flex justify-between text-xs mb-1.5 font-mono">
                           <span class="text-slate-400">Confidence Cutoff</span>
@@ -853,7 +1125,6 @@ const App = () => {
                         />
                       </div>
 
-                      <!-- Stream Input -->
                       <div>
                         <label class="block text-3xs font-mono text-slate-400 uppercase mb-1.5">Stream Source URL / Path</label>
                         <input 
@@ -889,11 +1160,10 @@ const App = () => {
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <h3 class="font-display font-bold text-white text-lg">Image Detection Suite</h3>
-                    <span class="text-3xs font-mono text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full border border-brand-primary/20">YOLOv5 Static Engine</span>
+                    <span class="text-3xs font-mono text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full border border-brand-primary/20">YOLOv5 Engine</span>
                   </div>
                   <p class="text-xs text-slate-400 mb-4">Upload custom traffic images or choose a sample snapshot below.</p>
 
-                  <!-- 1-Click Sample Image Selector -->
                   <div class="mb-4">
                     <span class="text-3xs font-mono uppercase text-slate-400 block mb-2">Instant Test Samples:</span>
                     <div class="flex flex-wrap gap-2">
@@ -909,7 +1179,6 @@ const App = () => {
                     </div>
                   </div>
                   
-                  <!-- Drag & Drop Zone -->
                   <div 
                     onDragOver=${handleDragOver}
                     onDrop=${handleDrop}
@@ -952,7 +1221,6 @@ const App = () => {
                     }
                   </div>
 
-                  <!-- Upload Detection Summary Pills -->
                   ${uploadStats && html`
                     <div class="mt-5 rounded-xl bg-brand-primary/10 border border-brand-primary/20 p-4 animate-fadeIn">
                       <h4 class="text-xs font-bold text-brand-primary uppercase tracking-wider font-mono mb-2">Detection Results</h4>
@@ -1047,12 +1315,12 @@ const App = () => {
                   ${galleryDetections.map((log, idx) => html`
                     <div 
                       key=${idx} 
-                      onClick=${() => setModalImage(`/${log.image}`)}
+                      onClick=${() => setModalImage(`/${log.image || log.image_url}`)}
                       class="group relative aspect-square rounded-xl border border-brand-card-border overflow-hidden bg-slate-950 cursor-pointer transition-all hover:border-brand-primary hover:shadow-neon-cyan"
                     >
-                      <img src="/${log.image}" class="h-full w-full object-cover transition-all duration-300 group-hover:scale-110" alt="Snapshot" />
+                      <img src="/${log.image || log.image_url}" class="h-full w-full object-cover transition-all duration-300 group-hover:scale-110" alt="Snapshot" />
                       <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-2.5">
-                        <span class="text-4xs text-slate-400 font-mono">${log.timestamp.slice(11)}</span>
+                        <span class="text-4xs text-slate-400 font-mono">${log.timestamp ? log.timestamp.slice(11) : ''}</span>
                         <span class="text-3xs font-bold text-brand-primary font-mono">${log.total} Vehicles</span>
                       </div>
                     </div>
@@ -1072,7 +1340,6 @@ const App = () => {
               <p class="text-xs text-slate-400 mb-6">Stream high-resolution live video feeds with continuous YOLOv5 bounding box tracking.</p>
               
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Video Monitor Screen -->
                 <div class="lg:col-span-2 flex flex-col rounded-2xl border border-brand-card-border overflow-hidden bg-slate-950 shadow-2xl">
                   <div class="bg-slate-900/80 px-5 py-3.5 flex justify-between items-center border-b border-brand-card-border">
                     <div class="flex items-center gap-2">
@@ -1104,7 +1371,6 @@ const App = () => {
                   </div>
                 </div>
 
-                <!-- Stream Settings Panel -->
                 <div class="rounded-2xl border border-brand-card-border bg-slate-950/60 p-6 flex flex-col justify-between">
                   <div class="space-y-5">
                     <h4 class="text-sm font-bold text-white border-b border-brand-card-border pb-3 uppercase font-mono tracking-wider">Stream Parameters</h4>
@@ -1212,14 +1478,14 @@ const App = () => {
           </div>
         `}
 
-        <!-- HISTORY LOGS TAB CONTENT -->
+        <!-- HISTORY LOGS TAB CONTENT (PROTECTED BY SUPABASE RLS) -->
         ${activeTab === 'history' && html`
           <div class="space-y-6 animate-fadeIn">
             <div class="glass-panel rounded-2xl p-6">
               <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                 <div>
-                  <h3 class="font-display font-bold text-white text-xl">Detection Database Logs</h3>
-                  <p class="text-xs text-slate-400 mt-1">Review CSV history records and download data reports.</p>
+                  <h3 class="font-display font-bold text-white text-xl">Supabase RLS Protected Logs</h3>
+                  <p class="text-xs text-slate-400 mt-1">Review your user-isolated detection database records stored in PostgreSQL.</p>
                 </div>
                 
                 <div class="flex flex-wrap gap-3">
@@ -1238,6 +1504,21 @@ const App = () => {
                   </button>
                 </div>
               </div>
+
+              ${!user && html`
+                <div class="mb-6 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-user-shield text-brand-primary text-2xl"></i>
+                    <div>
+                      <h4 class="text-sm font-bold text-white">Sign In to Enable Row Level Security (RLS)</h4>
+                      <p class="text-xs text-slate-300">Logged in users enjoy private PostgreSQL database persistence isolated from other users.</p>
+                    </div>
+                  </div>
+                  <button onClick=${() => setIsAuthModalOpen(true)} class="btn-shimmer rounded-xl bg-brand-primary text-brand-bg font-extrabold text-xs px-4 py-2 whitespace-nowrap">
+                    Sign In / Register Now
+                  </button>
+                </div>
+              `}
 
               <!-- History Data Table -->
               <div class="w-full overflow-x-auto rounded-2xl border border-brand-card-border bg-slate-950/60">
@@ -1258,12 +1539,12 @@ const App = () => {
                     ${filteredLogs.length === 0 ? html`
                       <tr>
                         <td colspan="8" class="px-5 py-12 text-center text-slate-500 font-medium">
-                          No detection log records found.
+                          No detection log records found. Complete a detection to populate logs.
                         </td>
                       </tr>
                     ` : filteredLogs.map((log, idx) => html`
                       <tr key=${idx} class="hover:bg-white/5 transition-all">
-                        <td class="px-5 py-3.5 text-slate-400 font-medium">${log.timestamp}</td>
+                        <td class="px-5 py-3.5 text-slate-400 font-medium">${log.timestamp ? log.timestamp.slice(0, 19).replace('T', ' ') : ''}</td>
                         <td class="px-5 py-3.5 font-bold text-white">${log.source}</td>
                         <td class="px-5 py-3.5 text-center text-brand-primary font-bold">${log.cars}</td>
                         <td class="px-5 py-3.5 text-center text-brand-success font-bold">${log.motorcycles}</td>
@@ -1271,9 +1552,9 @@ const App = () => {
                         <td class="px-5 py-3.5 text-center text-brand-danger font-bold">${log.buses}</td>
                         <td class="px-5 py-3.5 text-center font-black text-white">${log.total}</td>
                         <td class="px-5 py-3.5 text-right">
-                          ${log.image ? html`
+                          ${(log.image || log.image_url) ? html`
                             <button 
-                              onClick=${() => setModalImage(`/${log.image}`)}
+                              onClick=${() => setModalImage(`/${log.image || log.image_url}`)}
                               class="text-brand-primary hover:underline font-bold"
                             >
                               <i class="fa-solid fa-image mr-1"></i> Inspect
@@ -1293,13 +1574,51 @@ const App = () => {
         ${activeTab === 'settings' && html`
           <div class="space-y-6 animate-fadeIn">
             <div class="glass-panel rounded-2xl p-6 max-w-2xl mx-auto">
-              <h3 class="font-display font-bold text-white text-xl mb-2">System Configuration</h3>
-              <p class="text-xs text-slate-400 mb-6">Manage model parameters, remote logging webhooks, and local database storage.</p>
+              <h3 class="font-display font-bold text-white text-xl mb-2">System & Supabase Configuration</h3>
+              <p class="text-xs text-slate-400 mb-6">Manage Supabase API keys, YOLOv5 model parameters, and local database settings.</p>
               
-              <div class="space-y-5">
+              <div class="space-y-5 font-sans">
+                
+                <!-- Supabase Credentials Input -->
+                <div class="bg-slate-950/60 p-5 rounded-2xl border border-brand-card-border">
+                  <h4 class="text-xs font-bold text-brand-primary uppercase font-mono mb-2">Supabase Connection Parameters</h4>
+                  <p class="text-3xs text-slate-400 mb-3">Copy these from your Supabase Project Settings -> API.</p>
+                  
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-3xs font-mono text-slate-400 uppercase mb-1">SUPABASE_URL</label>
+                      <input 
+                        type="text" 
+                        placeholder="https://xyz.supabase.co"
+                        value=${localStorage.getItem("SUPABASE_URL") || ""} 
+                        onChange=${(e) => {
+                          localStorage.setItem("SUPABASE_URL", e.target.value);
+                          setSupabaseClient(initSupabase());
+                        }}
+                        class="w-full rounded-xl border border-brand-card-border bg-slate-900 px-4 py-2.5 text-xs text-white focus:border-brand-primary focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-3xs font-mono text-slate-400 uppercase mb-1">SUPABASE_ANON_KEY</label>
+                      <input 
+                        type="password" 
+                        placeholder="eyJhbGciOi..."
+                        value=${localStorage.getItem("SUPABASE_ANON_KEY") || ""} 
+                        onChange=${(e) => {
+                          localStorage.setItem("SUPABASE_ANON_KEY", e.target.value);
+                          setSupabaseClient(initSupabase());
+                        }}
+                        class="w-full rounded-xl border border-brand-card-border bg-slate-900 px-4 py-2.5 text-xs text-white focus:border-brand-primary focus:outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Confidence Setting -->
                 <div class="bg-slate-950/60 p-5 rounded-2xl border border-brand-card-border">
                   <div class="flex justify-between items-center mb-2">
-                    <label class="text-xs font-bold text-white uppercase font-mono">Confidence Threshold</label>
+                    <label class="text-xs font-bold text-white uppercase font-mono">Confidence Cutoff Threshold</label>
                     <span class="text-sm font-bold text-brand-primary font-mono">${(confidence * 100).toFixed(0)}%</span>
                   </div>
                   <p class="text-3xs text-slate-400 mb-3">Detections with confidence below this threshold will be discarded.</p>
@@ -1314,8 +1633,9 @@ const App = () => {
                   />
                 </div>
 
+                <!-- Camera Stream Mapping -->
                 <div class="bg-slate-950/60 p-5 rounded-2xl border border-brand-card-border">
-                  <label class="block text-xs font-bold text-white uppercase font-mono mb-2">Live Camera Mapping</label>
+                  <label class="block text-xs font-bold text-white uppercase font-mono mb-2">Live Camera Stream Mapping</label>
                   <input 
                     type="text" 
                     value=${cameraUrl} 
@@ -1325,23 +1645,15 @@ const App = () => {
                   />
                 </div>
 
-                <div class="bg-slate-950/60 p-5 rounded-2xl border border-brand-card-border">
-                  <label class="block text-xs font-bold text-white uppercase font-mono mb-2">Google Sheets Cloud Webhook</label>
-                  <input 
-                    type="text" 
-                    value=${WEBHOOK_URL} 
-                    disabled
-                    class="w-full rounded-xl border border-brand-card-border bg-slate-900/40 px-4 py-2.5 text-xs text-slate-500 font-mono cursor-not-allowed" 
-                  />
-                </div>
-
+                <!-- Clear Database -->
                 <div class="bg-brand-danger/10 p-5 rounded-2xl border border-brand-danger/30">
-                  <h4 class="text-xs font-bold text-brand-danger uppercase font-mono mb-1">Clear Local Database</h4>
-                  <p class="text-3xs text-slate-400 mb-4">Deletes all saved detection snapshot images and clears CSV log entries.</p>
+                  <h4 class="text-xs font-bold text-brand-danger uppercase font-mono mb-1">Clear Detection History</h4>
+                  <p class="text-3xs text-slate-400 mb-4">Deletes saved detection logs from your active storage account.</p>
                   <button onClick=${handleClearLogs} class="rounded-xl bg-brand-danger/20 hover:bg-brand-danger/30 text-brand-danger border border-brand-danger/40 font-bold text-xs px-5 py-2.5 transition-all">
-                    <i class="fa-solid fa-trash-can mr-2"></i> Purge All Data
+                    <i class="fa-solid fa-trash-can mr-2"></i> Clear History Logs
                   </button>
                 </div>
+
               </div>
             </div>
           </div>
@@ -1370,7 +1682,7 @@ const App = () => {
       <!-- Footer -->
       <footer class="border-t border-brand-card-border bg-slate-950/60 py-6 mt-16 text-center text-xs text-slate-500 font-mono">
         <div class="container mx-auto px-4">
-          <span>VehicleVision AI Traffic Analytics • Deep Learning Powered</span>
+          <span>VehicleVision AI • Powered by Vercel, Supabase & YOLOv5</span>
         </div>
       </footer>
 
@@ -1378,6 +1690,6 @@ const App = () => {
   `;
 };
 
-// RENDER REACT APP
+// RENDER REACT APPLICATION
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(html`<${App} />`);

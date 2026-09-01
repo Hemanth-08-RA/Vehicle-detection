@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "name": "vehicle-vision-ai",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/detect",
+      "destination": "https://vehicle-detection-backend.onrender.com/api/detect"
+    },
+    {
+      "source": "/api/video_feed",
+      "destination": "https://vehicle-detection-backend.onrender.com/api/video_feed"
+    },
+    {
+      "source": "/api/stop_feeds",
+      "destination": "https://vehicle-detection-backend.onrender.com/api/stop_feeds"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/static/$1"
+    }
+  ]
+}
